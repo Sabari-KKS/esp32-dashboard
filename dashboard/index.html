@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESP32 IoT Dashboard</title>
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+    <style>
+        :root {
+            --bg: #0b1120;
+            --card: #151d30;
+            --card-border: #1e2d4a;
+            --accent: #3b82f6;
+            --accent-glow: rgba(59,130,246,0.15);
+            --green: #22c55e;
+            --red: #ef4444;
+            --yellow: #eab308;
+            --text: #e2e8f0;
+            --text-dim: #64748b;
+            --text-bright: #f8fafc;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        /* ---- Login Screen ---- */
+        .login-overlay {
+            position: fixed;
+            inset: 0;
+            background: var(--bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .login-overlay.hidden { display: none; }
+        .login-box {
+            background: var(--card);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 40px;
+            width: 380px;
+            text-align: center;
+        }
+        .login-box .login-icon {
+            width: 56px; height: 56px;
+            background: var(--accent);
+            border-radius: 14px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            margin-bottom: 16px;
+        }
+        .login-box h2 {
+            font-size: 22px;
+            color: var(--text-bright);
+            margin-bottom: 4px;
+        }
+        .login-box .login-sub {
+            font-size: 13px;
+            color: var(--text-dim);
+            margin-bottom: 24px;
+        }
+        .login-box input {
+            width: 100%;
+            padding: 12px 14px;
+            border-radius: 8px;
+            border: 1px solid var(--card-border);
+            background: var(--bg);
+            color: var(--text);
+            font-size: 14px;
+            outline: none;
+            margin-bottom: 12px;
+            transition: border 0.2s;
+        }
+        .login-box input:focus { border-color: var(--accent); }
+        .login-box .login-btn {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: none;
+            background: var(--accent);
+            color: white;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 4px;
+            transition: background 0.2s;
+        }
+        .login-box .login-btn:hover { background: #2563eb; }
+        .login-error {
+            color: var(--red);
+            font-size: 13px;
+            margin-top: 10px;
+            min-height: 18px;
+        }
+        .dashboard-wrap { display: none; }
+        .dashboard-wrap.visible { display: block; }
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .user-name {
+            font-size: 13px;
+            color: var(--text-dim);
+        }
+        .logout-btn {
+            padding: 4px 12px;
+            border-radius: 6px;
+            border: 1px solid var(--card-border);
+            background: transparent;
+            color: var(--text-dim);
+            font-size: 12px;
+            cursor: pointer;
+        }
+        .logout-btn:hover { border-color: var(--red); color: var(--red); }
+
+        /* ---- Navbar ---- */
+        .navbar {
+            background: var(--card);
+            border-bottom: 1px solid var(--card-border);
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .navbar .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-bright);
+        }
+        .navbar .brand .icon {
+            width: 32px; height: 32px;
+            background: var(--accent);
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 16px;
+        }
+        .conn-badge {
+            padding: 5px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .conn-badge .dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .conn-badge.online { background: rgba(34,197,94,0.15); color: var(--green); }
+        .conn-badge.online .dot { background: var(--green); }
+        .conn-badge.offline { background: rgba(239,68,68,0.15); color: var(--red); }
+        .conn-badge.offline .dot { background: var(--red); }
+        .conn-badge.trying { background: rgba(234,179,8,0.15); color: var(--yellow); }
+        .conn-badge.trying .dot { background: var(--yellow); }
+
+        /* ---- Layout ---- */
+        .main { max-width: 1100px; margin: 0 auto; padding: 24px; }
+
+        /* ---- Stats Row ---- */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .stat-card {
+            background: var(--card);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .stat-card .label {
+            font-size: 13px;
+            color: var(--text-dim);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .stat-card .value {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text-bright);
+        }
+        .stat-card .sub {
+            font-size: 12px;
+            color: var(--text-dim);
+            margin-top: 4px;
+        }
+
+        /* ---- Grid ---- */
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
+
+        .panel {
+            background: var(--card);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+        }
+        .panel-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--card-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .panel-header h2 {
+            font-size: 16px;
+            font-weight: 600;
+        }
+        .panel-header .badge {
+            font-size: 11px;
+            background: var(--accent-glow);
+            color: var(--accent);
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-weight: 600;
+        }
+        .panel-body {
+            padding: 16px 20px;
+            flex: 1;
+            overflow-y: auto;
+            max-height: 400px;
+        }
+
+        /* ---- Messages ---- */
+        .msg-item {
+            padding: 12px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            background: rgba(15,23,42,0.6);
+            border-left: 3px solid var(--accent);
+            animation: fadeIn 0.3s ease;
+        }
+        .msg-item.sent { border-left-color: var(--green); }
+        .msg-item .msg-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+        .msg-item .msg-dir {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .msg-item .msg-dir.rx { color: var(--accent); }
+        .msg-item .msg-dir.tx { color: var(--green); }
+        .msg-item .msg-time { font-size: 11px; color: var(--text-dim); }
+        .msg-item .msg-topic { font-size: 12px; color: var(--text-dim); }
+        .msg-item .msg-data {
+            font-size: 15px;
+            color: var(--text-bright);
+            margin-top: 4px;
+            word-break: break-word;
+        }
+        @keyframes fadeIn { from { opacity:0; transform:translateY(-5px); } to { opacity:1; transform:translateY(0); } }
+
+        /* ---- Send Box ---- */
+        .send-area { padding: 16px 20px; border-top: 1px solid var(--card-border); }
+        .send-row { display: flex; gap: 8px; }
+        .send-row input {
+            flex: 1;
+            padding: 10px 14px;
+            border-radius: 8px;
+            border: 1px solid var(--card-border);
+            background: var(--bg);
+            color: var(--text);
+            font-size: 14px;
+            outline: none;
+            transition: border 0.2s;
+        }
+        .send-row input:focus { border-color: var(--accent); }
+        .send-row button {
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            background: var(--accent);
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .send-row button:hover { background: #2563eb; }
+
+        /* ---- Last Message Widget ---- */
+        .last-msg-box {
+            background: rgba(15,23,42,0.6);
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            min-height: 120px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .last-msg-box .big-msg {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-bright);
+            word-break: break-word;
+        }
+        .last-msg-box .big-time {
+            font-size: 12px;
+            color: var(--text-dim);
+            margin-top: 8px;
+        }
+
+        /* ---- Activity Log ---- */
+        .log-item {
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(30,45,74,0.5);
+            font-size: 13px;
+            display: flex;
+            gap: 10px;
+        }
+        .log-item:last-child { border-bottom: none; }
+        .log-item .log-time { color: var(--text-dim); white-space: nowrap; }
+        .log-item .log-text { color: var(--text); }
+        .log-item .log-text span { color: var(--accent); font-weight: 600; }
+
+        .empty-state {
+            text-align: center;
+            color: var(--text-dim);
+            padding: 40px 20px;
+            font-size: 14px;
+        }
+
+        /* ---- Quick Buttons ---- */
+        .quick-btns {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+        .quick-btn {
+            padding: 6px 14px;
+            border-radius: 6px;
+            border: 1px solid var(--card-border);
+            background: transparent;
+            color: var(--text-dim);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .quick-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: var(--accent-glow);
+        }
+
+        /* ---- Footer ---- */
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: var(--text-dim);
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Login Screen -->
+<div class="login-overlay" id="loginOverlay">
+    <div class="login-box">
+        <div class="login-icon">&#9889;</div>
+        <h2>ESP32 Dashboard</h2>
+        <div class="login-sub">Sign in to access the IoT dashboard</div>
+        <input type="text" id="loginUser" placeholder="Username" onkeydown="if(event.key==='Enter') document.getElementById('loginPass').focus()">
+        <input type="password" id="loginPass" placeholder="Password" onkeydown="if(event.key==='Enter') doLogin()">
+        <button class="login-btn" onclick="doLogin()">Sign In</button>
+        <div class="login-error" id="loginError"></div>
+    </div>
+</div>
+
+<!-- Dashboard (hidden until login) -->
+<div class="dashboard-wrap" id="dashboardWrap">
+
+<!-- Navbar -->
+<nav class="navbar">
+    <div class="brand">
+        <div class="icon">&#9889;</div>
+        <span>ESP32 Dashboard</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:16px;">
+        <div id="connBadge" class="conn-badge trying">
+            <span class="dot"></span>
+            <span id="connText">Connecting...</span>
+        </div>
+        <div class="user-info">
+            <span class="user-name" id="userName"></span>
+            <button class="logout-btn" onclick="doLogout()">Logout</button>
+        </div>
+    </div>
+</nav>
+
+<div class="main">
+
+    <!-- Stats -->
+    <div class="stats">
+        <div class="stat-card">
+            <div class="label">Received</div>
+            <div class="value" id="rxCount">0</div>
+            <div class="sub">messages from ESP</div>
+        </div>
+        <div class="stat-card">
+            <div class="label">Sent</div>
+            <div class="value" id="txCount">0</div>
+            <div class="sub">messages to ESP</div>
+        </div>
+        <div class="stat-card">
+            <div class="label">Topic</div>
+            <div class="value" style="font-size:18px; color:var(--accent);">vautn/</div>
+            <div class="sub">broker.emqx.io:1883</div>
+        </div>
+        <div class="stat-card">
+            <div class="label">Uptime</div>
+            <div class="value" id="uptime">00:00</div>
+            <div class="sub" id="startTime">--</div>
+        </div>
+    </div>
+
+    <!-- Grid -->
+    <div class="grid">
+
+        <!-- Left: Messages -->
+        <div class="panel">
+            <div class="panel-header">
+                <h2>Messages</h2>
+                <button class="badge" onclick="clearMessages()" style="cursor:pointer; border:none;">Clear</button>
+            </div>
+            <div class="panel-body" id="msgList">
+                <div class="empty-state" id="msgEmpty">No messages yet. Waiting for ESP...</div>
+            </div>
+            <div class="send-area">
+                <div class="quick-btns">
+                    <button class="quick-btn" onclick="quickSend('LED ON')">LED ON</button>
+                    <button class="quick-btn" onclick="quickSend('LED OFF')">LED OFF</button>
+                    <button class="quick-btn" onclick="quickSend('STATUS')">STATUS</button>
+                    <button class="quick-btn" onclick="quickSend('RESTART')">RESTART</button>
+                </div>
+                <div class="send-row">
+                    <input type="text" id="msgInput" placeholder="Send message to ESP..."
+                           onkeydown="if(event.key==='Enter') sendMsg()">
+                    <button onclick="sendMsg()">Send</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Last Message + Log -->
+        <div style="display:flex; flex-direction:column; gap:20px;">
+
+            <!-- Last Received -->
+            <div class="panel">
+                <div class="panel-header">
+                    <h2>Last Received</h2>
+                    <span class="badge">LIVE</span>
+                </div>
+                <div class="panel-body">
+                    <div class="last-msg-box">
+                        <div class="big-msg" id="lastMsg">--</div>
+                        <div class="big-time" id="lastMsgTime">waiting...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Activity Log -->
+            <div class="panel" style="flex:1;">
+                <div class="panel-header">
+                    <h2>Activity Log</h2>
+                    <button class="badge" onclick="clearLog()" style="cursor:pointer; border:none;">Clear</button>
+                </div>
+                <div class="panel-body" id="logList">
+                    <div class="empty-state" id="logEmpty">No activity yet.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="footer">ESP32 IoT Dashboard &mdash; Connected to broker.emqx.io via WebSocket</div>
+
+</div><!-- end dashboard-wrap -->
+
+<script>
+    /* ============================================
+       USER ACCOUNTS — add/remove users here
+       ============================================ */
+    const USERS = {
+        admin:  { password: 'admin123',  name: 'Admin' },
+        user1:  { password: 'user123',   name: 'User 1' },
+        user2:  { password: 'user456',   name: 'User 2' },
+        // Add more: username: { password: 'xxx', name: 'Display Name' },
+    };
+
+    /* ---- Login / Logout ---- */
+    function doLogin() {
+        const user = document.getElementById('loginUser').value.trim().toLowerCase();
+        const pass = document.getElementById('loginPass').value;
+        const err = document.getElementById('loginError');
+
+        if (!user || !pass) { err.textContent = 'Enter username and password'; return; }
+        if (!USERS[user] || USERS[user].password !== pass) {
+            err.textContent = 'Invalid username or password';
+            return;
+        }
+
+        sessionStorage.setItem('loggedInUser', user);
+        showDashboard(user);
+    }
+
+    function doLogout() {
+        sessionStorage.removeItem('loggedInUser');
+        location.reload();
+    }
+
+    function showDashboard(user) {
+        document.getElementById('loginOverlay').classList.add('hidden');
+        document.getElementById('dashboardWrap').classList.add('visible');
+        document.getElementById('userName').textContent = USERS[user].name;
+        connectMQTT();
+    }
+
+    // Auto-login if session exists
+    (function checkSession() {
+        const saved = sessionStorage.getItem('loggedInUser');
+        if (saved && USERS[saved]) {
+            showDashboard(saved);
+        }
+    })();
+
+    /* ---- MQTT ---- */
+    const BROKER = 'ws://broker.emqx.io:8083/mqtt';
+    const TOPIC = 'vautn/';
+    let client = null;
+    let rxCount = 0, txCount = 0;
+    let startedAt = new Date();
+
+    function connectMQTT() {
+        if (client) return;
+
+        const connBadge = document.getElementById('connBadge');
+        const connText = document.getElementById('connText');
+
+        client = mqtt.connect(BROKER, {
+            clientId: 'dashboard_' + Math.random().toString(16).slice(2, 8),
+            clean: true,
+            connectTimeout: 5000,
+            reconnectPeriod: 3000,
+        });
+
+        client.on('connect', () => {
+            setStatus('online', 'Connected');
+            client.subscribe(TOPIC, { qos: 1 });
+            addLog('Connected to broker');
+            addLog('Subscribed to <span>' + TOPIC + '</span>');
+            startedAt = new Date();
+            document.getElementById('startTime').textContent = 'since ' + startedAt.toLocaleTimeString();
+        });
+
+        client.on('reconnect', () => {
+            setStatus('trying', 'Reconnecting...');
+            addLog('Reconnecting...');
+        });
+
+        client.on('offline', () => setStatus('offline', 'Disconnected'));
+        client.on('error', () => setStatus('offline', 'Error'));
+
+        client.on('message', (topic, message) => {
+            const msg = message.toString();
+            rxCount++;
+            document.getElementById('rxCount').textContent = rxCount;
+            addMessage(topic, msg, 'rx');
+            document.getElementById('lastMsg').textContent = msg;
+            document.getElementById('lastMsgTime').textContent = new Date().toLocaleTimeString();
+            addLog('Received: <span>' + escapeHtml(msg) + '</span>');
+        });
+
+        function setStatus(cls, text) {
+            connBadge.className = 'conn-badge ' + cls;
+            connText.textContent = text;
+        }
+    }
+
+    // Uptime timer
+    setInterval(() => {
+        const diff = Math.floor((new Date() - startedAt) / 1000);
+        const m = String(Math.floor(diff / 60)).padStart(2, '0');
+        const s = String(diff % 60).padStart(2, '0');
+        document.getElementById('uptime').textContent = m + ':' + s;
+    }, 1000);
+
+    function addMessage(topic, data, dir) {
+        const msgList = document.getElementById('msgList');
+        const msgEmpty = document.getElementById('msgEmpty');
+        if (msgEmpty) msgEmpty.remove();
+        const div = document.createElement('div');
+        div.className = 'msg-item' + (dir === 'tx' ? ' sent' : '');
+        div.innerHTML = `
+            <div class="msg-meta">
+                <span class="msg-dir ${dir}">${dir === 'tx' ? '&#8593; SENT' : '&#8595; RECEIVED'}</span>
+                <span class="msg-time">${new Date().toLocaleTimeString()}</span>
+            </div>
+            <div class="msg-topic">${topic}</div>
+            <div class="msg-data">${escapeHtml(data)}</div>
+        `;
+        msgList.prepend(div);
+    }
+
+    function addLog(text) {
+        const logList = document.getElementById('logList');
+        const logEmpty = document.getElementById('logEmpty');
+        if (logEmpty) logEmpty.remove();
+        const div = document.createElement('div');
+        div.className = 'log-item';
+        div.innerHTML = `
+            <span class="log-time">${new Date().toLocaleTimeString()}</span>
+            <span class="log-text">${text}</span>
+        `;
+        logList.prepend(div);
+    }
+
+    function sendMsg() {
+        const msgInput = document.getElementById('msgInput');
+        const msg = msgInput.value.trim();
+        if (!msg || !client) return;
+        client.publish(TOPIC, msg, { qos: 1 });
+        txCount++;
+        document.getElementById('txCount').textContent = txCount;
+        addMessage(TOPIC, msg, 'tx');
+        addLog('Sent: <span>' + escapeHtml(msg) + '</span>');
+        msgInput.value = '';
+    }
+
+    function quickSend(msg) {
+        if (!client) return;
+        client.publish(TOPIC, msg, { qos: 1 });
+        txCount++;
+        document.getElementById('txCount').textContent = txCount;
+        addMessage(TOPIC, msg, 'tx');
+        addLog('Sent: <span>' + escapeHtml(msg) + '</span>');
+    }
+
+    function clearMessages() {
+        document.getElementById('msgList').innerHTML = '<div class="empty-state">No messages yet.</div>';
+    }
+
+    function clearLog() {
+        document.getElementById('logList').innerHTML = '<div class="empty-state">No activity yet.</div>';
+    }
+
+    function escapeHtml(text) {
+        const d = document.createElement('div');
+        d.textContent = text;
+        return d.innerHTML;
+    }
+</script>
+</body>
+</html>
