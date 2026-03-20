@@ -548,6 +548,33 @@
         }
         .collapsible-panel.hidden { display: none; }
 
+        /* ---- More Button ---- */
+        .more-btn {
+            width: 100%;
+            padding: 14px;
+            border-radius: 12px;
+            border: 1px solid var(--card-border);
+            background: var(--card);
+            color: var(--text-dim);
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+        .more-btn:hover { border-color: var(--accent); color: var(--accent); }
+        .more-btn.active {
+            border-color: var(--accent);
+            background: var(--accent-glow);
+            color: var(--accent);
+        }
+        .more-section { animation: fadeIn 0.3s ease; }
+        .more-section.hidden { display: none; }
+
         /* ---- Footer ---- */
         .footer {
             text-align: center;
@@ -594,30 +621,6 @@
 </nav>
 
 <div class="main">
-
-    <!-- Stats -->
-    <div class="stats">
-        <div class="stat-card">
-            <div class="label">Received</div>
-            <div class="value" id="rxCount">0</div>
-            <div class="sub">messages from ESP</div>
-        </div>
-        <div class="stat-card">
-            <div class="label">Sent</div>
-            <div class="value" id="txCount">0</div>
-            <div class="sub">messages to ESP</div>
-        </div>
-        <div class="stat-card">
-            <div class="label">Topic</div>
-            <div class="value" style="font-size:18px; color:var(--accent);">vautn/</div>
-            <div class="sub">broker.emqx.io:1883</div>
-        </div>
-        <div class="stat-card">
-            <div class="label">Uptime</div>
-            <div class="value" id="uptime">00:00</div>
-            <div class="sub" id="startTime">--</div>
-        </div>
-    </div>
 
     <!-- Controls -->
     <div class="controls-section">
@@ -708,6 +711,38 @@
         </div>
     </div>
 
+    <!-- More Button -->
+    <button class="more-btn" id="moreBtn" onclick="toggleMore()">
+        <span id="moreIcon">&#9776;</span> More
+    </button>
+
+    <!-- Hidden extras -->
+    <div class="more-section hidden" id="moreSection">
+
+    <!-- Stats -->
+    <div class="stats">
+        <div class="stat-card">
+            <div class="label">Received</div>
+            <div class="value" id="rxCount">0</div>
+            <div class="sub">messages from ESP</div>
+        </div>
+        <div class="stat-card">
+            <div class="label">Sent</div>
+            <div class="value" id="txCount">0</div>
+            <div class="sub">messages to ESP</div>
+        </div>
+        <div class="stat-card">
+            <div class="label">Topic</div>
+            <div class="value" style="font-size:18px; color:var(--accent);">vautn/</div>
+            <div class="sub">broker.emqx.io:1883</div>
+        </div>
+        <div class="stat-card">
+            <div class="label">Uptime</div>
+            <div class="value" id="uptime">00:00</div>
+            <div class="sub" id="startTime">--</div>
+        </div>
+    </div>
+
     <!-- Section Toggle Buttons -->
     <div class="section-toggles">
         <button class="section-toggle-btn" id="msgToggleBtn" onclick="toggleSection('msg')">
@@ -781,6 +816,8 @@
             </div>
         </div>
     </div>
+
+    </div><!-- end more-section -->
 </div>
 
 <div class="footer">ESP32 IoT Dashboard &mdash; Connected to broker.emqx.io via WebSocket</div>
@@ -1050,6 +1087,18 @@
         allBtn.textContent = !anyOn ? 'All OFF' : 'All ON';
         allBtn.classList.toggle('on', !anyOn);
         addLog('Sent: <span>ALL FANS ' + (!anyOn ? 'ON' : 'OFF') + '</span>');
+    }
+
+    /* ---- More Toggle ---- */
+    function toggleMore() {
+        const section = document.getElementById('moreSection');
+        const btn = document.getElementById('moreBtn');
+        const isHidden = section.classList.contains('hidden');
+        section.classList.toggle('hidden', !isHidden);
+        btn.classList.toggle('active', isHidden);
+        btn.innerHTML = isHidden
+            ? '<span>&#10005;</span> Hide'
+            : '<span>&#9776;</span> More';
     }
 
     /* ---- Section Toggle ---- */
