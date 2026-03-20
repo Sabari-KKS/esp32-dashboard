@@ -920,6 +920,9 @@
             logCount++;
             document.getElementById('msgBadge').textContent = msgCount;
             document.getElementById('logBadge').textContent = logCount;
+
+            /* Sync UI from incoming messages */
+            syncFromMessage(msg);
         });
 
         function setStatus(cls, text) {
@@ -1087,6 +1090,51 @@
         allBtn.textContent = !anyOn ? 'All OFF' : 'All ON';
         allBtn.classList.toggle('on', !anyOn);
         addLog('Sent: <span>ALL FANS ' + (!anyOn ? 'ON' : 'OFF') + '</span>');
+    }
+
+    /* ---- Sync UI from incoming MQTT messages ---- */
+    function syncFromMessage(msg) {
+        /* LIGHT1:ON / LIGHT1:OFF */
+        if (msg.startsWith('LIGHT')) {
+            const match = msg.match(/^LIGHT(\d+):(ON|OFF)$/);
+            if (match) {
+                const num = parseInt(match[1]);
+                const on = match[2] === 'ON';
+                lightState[num] = on;
+                const card = document.getElementById('light' + num + 'Card');
+                const status = document.getElementById('light' + num + 'Status');
+                if (card) {
+                    card.classList.toggle('active', on);
+                    status.textContent = on ? 'ON' : 'OFF';
+                }
+                /* Update All ON/OFF button */
+                const anyOn = Object.values(lightState).some(v => v);
+                const allBtn = document.getElementById('allLightsBtn');
+                allBtn.textContent = anyOn ? 'All OFF' : 'All ON';
+                allBtn.classList.toggle('on', anyOn);
+            }
+        }
+        /* FAN1:3 / FAN1:OFF */
+        else if (msg.startsWith('FAN')) {
+            const match = msg.match(/^FAN(\d+):(.+)$/);
+            if (match) {
+                const num = parseInt(match[1]);
+                const val = match[2];
+                if (val === 'OFF') {
+                    fanState[num] = false;
+                    fanSpeed[num] = 0;
+                } else {
+                    fanState[num] = true;
+                    fanSpeed[num] = parseInt(val);
+                }
+                updateFanUI(num);
+                /* Update All ON/OFF button */
+                const anyOn = Object.values(fanState).some(v => v);
+                const allBtn = document.getElementById('allFansBtn');
+                allBtn.textContent = anyOn ? 'All OFF' : 'All ON';
+                allBtn.classList.toggle('on', anyOn);
+            }
+        }
     }
 
     /* ---- More Toggle ---- */
