@@ -412,33 +412,45 @@
         .light-card { cursor: pointer; user-select: none; }
         .light-card:hover { border-color: var(--accent); }
 
-        /* Toggle Switch */
-        .toggle {
-            position: relative;
-            width: 50px;
-            height: 26px;
-            margin: 0 auto;
+        /* All ON/OFF Button */
+        .all-toggle-btn {
+            padding: 6px 18px;
+            border-radius: 8px;
+            border: 1px solid var(--card-border);
+            background: transparent;
+            color: var(--text-dim);
+            font-size: 13px;
+            font-weight: 600;
             cursor: pointer;
+            transition: all 0.2s;
         }
-        .toggle input { display: none; }
-        .toggle .slider {
-            position: absolute;
-            inset: 0;
-            background: #334155;
-            border-radius: 26px;
-            transition: background 0.3s;
+        .all-toggle-btn:hover { border-color: var(--accent); color: var(--accent); }
+        .all-toggle-btn.on {
+            background: var(--red);
+            border-color: var(--red);
+            color: white;
         }
-        .toggle .slider::before {
-            content: '';
-            position: absolute;
-            width: 20px; height: 20px;
-            left: 3px; top: 3px;
-            background: white;
-            border-radius: 50%;
-            transition: transform 0.3s;
+
+        /* Fan Toggle Button */
+        .fan-toggle-btn {
+            padding: 8px 24px;
+            border-radius: 8px;
+            border: 1px solid var(--card-border);
+            background: transparent;
+            color: var(--text-dim);
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin: 8px auto;
+            display: block;
         }
-        .toggle input:checked + .slider { background: var(--accent); }
-        .toggle input:checked + .slider::before { transform: translateX(24px); }
+        .fan-toggle-btn:hover { border-color: var(--accent); color: var(--accent); }
+        .fan-toggle-btn.on {
+            background: var(--green);
+            border-color: var(--green);
+            color: white;
+        }
 
         /* Fan Card */
         .fan-card .ctrl-icon { transition: filter 0.3s; }
@@ -479,6 +491,62 @@
             color: var(--accent);
             margin-top: 4px;
         }
+
+        /* ---- Section Toggle Buttons ---- */
+        .section-toggles {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .section-toggle-btn {
+            flex: 1;
+            min-width: 140px;
+            padding: 14px 18px;
+            border-radius: 12px;
+            border: 1px solid var(--card-border);
+            background: var(--card);
+            color: var(--text-dim);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.2s;
+        }
+        .section-toggle-btn:hover {
+            border-color: var(--accent);
+            color: var(--text);
+        }
+        .section-toggle-btn.active {
+            border-color: var(--accent);
+            background: var(--accent-glow);
+            color: var(--accent);
+        }
+        .section-icon {
+            font-size: 20px;
+        }
+        .section-count {
+            margin-left: auto;
+            background: var(--accent-glow);
+            color: var(--accent);
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+        .section-indicator {
+            margin-left: auto;
+            color: var(--green);
+            font-size: 11px;
+            font-weight: 700;
+        }
+        .collapsible-panel {
+            margin-bottom: 20px;
+            animation: fadeIn 0.3s ease;
+        }
+        .collapsible-panel.hidden { display: none; }
 
         /* ---- Footer ---- */
         .footer {
@@ -553,7 +621,10 @@
 
     <!-- Controls -->
     <div class="controls-section">
-        <h2>Lights</h2>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+            <h2>Lights</h2>
+            <button class="all-toggle-btn" id="allLightsBtn" onclick="toggleAllLights()">All ON</button>
+        </div>
         <div class="controls-grid">
             <div class="control-card light-card" id="light1Card" onclick="toggleLight(1)">
                 <div class="ctrl-icon">&#128161;</div>
@@ -580,20 +651,35 @@
                 <div class="ctrl-name">Light 5</div>
                 <div class="ctrl-status" id="light5Status">OFF</div>
             </div>
+            <div class="control-card light-card" id="light6Card" onclick="toggleLight(6)">
+                <div class="ctrl-icon">&#128161;</div>
+                <div class="ctrl-name">Light 6</div>
+                <div class="ctrl-status" id="light6Status">OFF</div>
+            </div>
+            <div class="control-card light-card" id="light7Card" onclick="toggleLight(7)">
+                <div class="ctrl-icon">&#128161;</div>
+                <div class="ctrl-name">Light 7</div>
+                <div class="ctrl-status" id="light7Status">OFF</div>
+            </div>
+            <div class="control-card light-card" id="light8Card" onclick="toggleLight(8)">
+                <div class="ctrl-icon">&#128161;</div>
+                <div class="ctrl-name">Light 8</div>
+                <div class="ctrl-status" id="light8Status">OFF</div>
+            </div>
         </div>
     </div>
 
     <div class="controls-section">
-        <h2>Fans</h2>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+            <h2>Fans</h2>
+            <button class="all-toggle-btn" id="allFansBtn" onclick="toggleAllFans()">All ON</button>
+        </div>
         <div class="controls-grid">
             <div class="control-card fan-card" id="fan1Card">
                 <div class="ctrl-icon"><span class="fan-spin" id="fan1Spin">&#9752;</span></div>
                 <div class="ctrl-name">Fan 1</div>
                 <div class="ctrl-status" id="fan1Status">OFF</div>
-                <label class="toggle">
-                    <input type="checkbox" id="fan1" onchange="toggleFan(1, this.checked)">
-                    <span class="slider"></span>
-                </label>
+                <button class="fan-toggle-btn" id="fan1Btn" onclick="toggleFan(1)">OFF</button>
                 <div class="speed-control">
                     <div class="speed-value" id="fan1SpeedVal">Speed: 0</div>
                     <div class="speed-btns">
@@ -608,10 +694,7 @@
                 <div class="ctrl-icon"><span class="fan-spin" id="fan2Spin">&#9752;</span></div>
                 <div class="ctrl-name">Fan 2</div>
                 <div class="ctrl-status" id="fan2Status">OFF</div>
-                <label class="toggle">
-                    <input type="checkbox" id="fan2" onchange="toggleFan(2, this.checked)">
-                    <span class="slider"></span>
-                </label>
+                <button class="fan-toggle-btn" id="fan2Btn" onclick="toggleFan(2)">OFF</button>
                 <div class="speed-control">
                     <div class="speed-value" id="fan2SpeedVal">Speed: 0</div>
                     <div class="speed-btns">
@@ -625,10 +708,27 @@
         </div>
     </div>
 
-    <!-- Grid -->
-    <div class="grid">
+    <!-- Section Toggle Buttons -->
+    <div class="section-toggles">
+        <button class="section-toggle-btn" id="msgToggleBtn" onclick="toggleSection('msg')">
+            <span class="section-icon">&#9993;</span>
+            <span>Messages</span>
+            <span class="section-count" id="msgBadge">0</span>
+        </button>
+        <button class="section-toggle-btn" id="lastMsgToggleBtn" onclick="toggleSection('lastMsg')">
+            <span class="section-icon">&#9889;</span>
+            <span>Last Message</span>
+            <span class="section-indicator">LIVE</span>
+        </button>
+        <button class="section-toggle-btn" id="logToggleBtn" onclick="toggleSection('log')">
+            <span class="section-icon">&#9776;</span>
+            <span>Activity</span>
+            <span class="section-count" id="logBadge">0</span>
+        </button>
+    </div>
 
-        <!-- Left: Messages -->
+    <!-- Messages Panel (hidden by default) -->
+    <div class="collapsible-panel hidden" id="msgPanel">
         <div class="panel">
             <div class="panel-header">
                 <h2>Messages</h2>
@@ -651,33 +751,33 @@
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- Right: Last Message + Log -->
-        <div style="display:flex; flex-direction:column; gap:20px;">
-
-            <!-- Last Received -->
-            <div class="panel">
-                <div class="panel-header">
-                    <h2>Last Received</h2>
-                    <span class="badge">LIVE</span>
-                </div>
-                <div class="panel-body">
-                    <div class="last-msg-box">
-                        <div class="big-msg" id="lastMsg">--</div>
-                        <div class="big-time" id="lastMsgTime">waiting...</div>
-                    </div>
+    <!-- Last Received Panel (hidden by default) -->
+    <div class="collapsible-panel hidden" id="lastMsgPanel">
+        <div class="panel">
+            <div class="panel-header">
+                <h2>Last Received</h2>
+                <span class="badge">LIVE</span>
+            </div>
+            <div class="panel-body">
+                <div class="last-msg-box">
+                    <div class="big-msg" id="lastMsg">--</div>
+                    <div class="big-time" id="lastMsgTime">waiting...</div>
                 </div>
             </div>
+        </div>
+    </div>
 
-            <!-- Activity Log -->
-            <div class="panel" style="flex:1;">
-                <div class="panel-header">
-                    <h2>Activity Log</h2>
-                    <button class="badge" onclick="clearLog()" style="cursor:pointer; border:none;">Clear</button>
-                </div>
-                <div class="panel-body" id="logList">
-                    <div class="empty-state" id="logEmpty">No activity yet.</div>
-                </div>
+    <!-- Activity Log Panel (hidden by default) -->
+    <div class="collapsible-panel hidden" id="logPanel">
+        <div class="panel">
+            <div class="panel-header">
+                <h2>Activity Log</h2>
+                <button class="badge" onclick="clearLog()" style="cursor:pointer; border:none;">Clear</button>
+            </div>
+            <div class="panel-body" id="logList">
+                <div class="empty-state" id="logEmpty">No activity yet.</div>
             </div>
         </div>
     </div>
@@ -779,6 +879,10 @@
             document.getElementById('lastMsg').textContent = msg;
             document.getElementById('lastMsgTime').textContent = new Date().toLocaleTimeString();
             addLog('Received: <span>' + escapeHtml(msg) + '</span>');
+            msgCount++;
+            logCount++;
+            document.getElementById('msgBadge').textContent = msgCount;
+            document.getElementById('logBadge').textContent = logCount;
         });
 
         function setStatus(cls, text) {
@@ -847,7 +951,7 @@
     }
 
     /* ---- Light & Fan Controls ---- */
-    const lightState = {1:false, 2:false, 3:false, 4:false, 5:false};
+    const lightState = {1:false, 2:false, 3:false, 4:false, 5:false, 6:false, 7:false, 8:false};
 
     function toggleLight(num) {
         lightState[num] = !lightState[num];
@@ -864,20 +968,18 @@
         addLog('Sent: <span>' + cmd + '</span>');
     }
 
-    function toggleFan(num, on) {
-        const cmd = 'FAN' + num + ':' + (on ? '1' : 'OFF');
+    const fanState = {1: false, 2: false};
+    const fanSpeed = {1: 0, 2: 0};
+
+    function toggleFan(num) {
+        fanState[num] = !fanState[num];
+        const on = fanState[num];
+        if (on && fanSpeed[num] === 0) fanSpeed[num] = 1;
+        if (!on) fanSpeed[num] = 0;
+
+        const cmd = 'FAN' + num + ':' + (on ? fanSpeed[num] : 'OFF');
         if (client) client.publish(TOPIC, cmd, { qos: 1 });
-        const card = document.getElementById('fan' + num + 'Card');
-        const status = document.getElementById('fan' + num + 'Status');
-        card.classList.toggle('active', on);
-        status.textContent = on ? 'ON - Speed 1' : 'OFF';
-        if (on) {
-            setFanBtnActive(num, 1);
-            document.getElementById('fan' + num + 'SpeedVal').textContent = 'Speed: 1';
-        } else {
-            setFanBtnActive(num, 0);
-            document.getElementById('fan' + num + 'SpeedVal').textContent = 'Speed: 0';
-        }
+        updateFanUI(num);
         txCount++;
         document.getElementById('txCount').textContent = txCount;
         addMessage(TOPIC, cmd, 'tx');
@@ -886,29 +988,79 @@
 
     function setFanSpeed(num, speed) {
         speed = parseInt(speed);
-        const checkbox = document.getElementById('fan' + num);
-        const card = document.getElementById('fan' + num + 'Card');
-        const status = document.getElementById('fan' + num + 'Status');
-
-        checkbox.checked = speed > 0;
-        card.classList.toggle('active', speed > 0);
-        status.textContent = speed > 0 ? 'ON - Speed ' + speed : 'OFF';
-        document.getElementById('fan' + num + 'SpeedVal').textContent = 'Speed: ' + speed;
-        setFanBtnActive(num, speed);
+        fanSpeed[num] = speed;
+        fanState[num] = speed > 0;
 
         const cmd = 'FAN' + num + ':' + (speed > 0 ? speed : 'OFF');
         if (client) client.publish(TOPIC, cmd, { qos: 1 });
+        updateFanUI(num);
         txCount++;
         document.getElementById('txCount').textContent = txCount;
         addMessage(TOPIC, cmd, 'tx');
         addLog('Sent: <span>' + cmd + '</span>');
     }
 
-    function setFanBtnActive(num, speed) {
+    function updateFanUI(num) {
+        const on = fanState[num];
         const card = document.getElementById('fan' + num + 'Card');
-        card.querySelectorAll('.speed-btn').forEach((btn, i) => {
-            btn.classList.toggle('active', (i + 1) === speed);
+        const status = document.getElementById('fan' + num + 'Status');
+        const btn = document.getElementById('fan' + num + 'Btn');
+        card.classList.toggle('active', on);
+        status.textContent = on ? 'ON - Speed ' + fanSpeed[num] : 'OFF';
+        btn.textContent = on ? 'ON' : 'OFF';
+        btn.classList.toggle('on', on);
+        document.getElementById('fan' + num + 'SpeedVal').textContent = 'Speed: ' + fanSpeed[num];
+        card.querySelectorAll('.speed-btn').forEach((b, i) => {
+            b.classList.toggle('active', (i + 1) === fanSpeed[num]);
         });
+    }
+
+    function toggleAllLights() {
+        const anyOn = Object.values(lightState).some(v => v);
+        for (let i = 1; i <= 8; i++) {
+            lightState[i] = !anyOn;
+            const card = document.getElementById('light' + i + 'Card');
+            const status = document.getElementById('light' + i + 'Status');
+            card.classList.toggle('active', !anyOn);
+            status.textContent = !anyOn ? 'ON' : 'OFF';
+            const cmd = 'LIGHT' + i + ':' + (!anyOn ? 'ON' : 'OFF');
+            if (client) client.publish(TOPIC, cmd, { qos: 1 });
+            txCount++;
+        }
+        document.getElementById('txCount').textContent = txCount;
+        const allBtn = document.getElementById('allLightsBtn');
+        allBtn.textContent = !anyOn ? 'All OFF' : 'All ON';
+        allBtn.classList.toggle('on', !anyOn);
+        addLog('Sent: <span>ALL LIGHTS ' + (!anyOn ? 'ON' : 'OFF') + '</span>');
+    }
+
+    function toggleAllFans() {
+        const anyOn = Object.values(fanState).some(v => v);
+        for (let i = 1; i <= 2; i++) {
+            fanState[i] = !anyOn;
+            if (!anyOn && fanSpeed[i] === 0) fanSpeed[i] = 1;
+            if (anyOn) fanSpeed[i] = 0;
+            const cmd = 'FAN' + i + ':' + (!anyOn ? fanSpeed[i] : 'OFF');
+            if (client) client.publish(TOPIC, cmd, { qos: 1 });
+            updateFanUI(i);
+            txCount++;
+        }
+        document.getElementById('txCount').textContent = txCount;
+        const allBtn = document.getElementById('allFansBtn');
+        allBtn.textContent = !anyOn ? 'All OFF' : 'All ON';
+        allBtn.classList.toggle('on', !anyOn);
+        addLog('Sent: <span>ALL FANS ' + (!anyOn ? 'ON' : 'OFF') + '</span>');
+    }
+
+    /* ---- Section Toggle ---- */
+    let msgCount = 0, logCount = 0;
+
+    function toggleSection(name) {
+        const panel = document.getElementById(name + 'Panel');
+        const btn = document.getElementById(name + 'ToggleBtn');
+        const isHidden = panel.classList.contains('hidden');
+        panel.classList.toggle('hidden', !isHidden);
+        btn.classList.toggle('active', isHidden);
     }
 
     function clearMessages() {
