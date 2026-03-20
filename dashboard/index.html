@@ -409,6 +409,8 @@
             margin-bottom: 12px;
         }
         .control-card.active .ctrl-status { color: var(--green); }
+        .light-card { cursor: pointer; user-select: none; }
+        .light-card:hover { border-color: var(--accent); }
 
         /* Toggle Switch */
         .toggle {
@@ -445,34 +447,31 @@
         .speed-control {
             margin-top: 12px;
         }
-        .speed-slider {
-            -webkit-appearance: none;
-            width: 100%;
-            height: 6px;
-            border-radius: 3px;
-            background: #334155;
-            outline: none;
-            margin: 8px 0;
-        }
-        .speed-slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 18px; height: 18px;
-            border-radius: 50%;
-            background: var(--accent);
-            cursor: pointer;
-        }
-        .speed-slider::-moz-range-thumb {
-            width: 18px; height: 18px;
-            border-radius: 50%;
-            background: var(--accent);
-            cursor: pointer;
-            border: none;
-        }
-        .speed-labels {
+        .speed-btns {
             display: flex;
-            justify-content: space-between;
-            font-size: 10px;
+            gap: 6px;
+            justify-content: center;
+            margin-top: 8px;
+        }
+        .speed-btn {
+            width: 36px; height: 36px;
+            border-radius: 8px;
+            border: 1px solid var(--card-border);
+            background: transparent;
             color: var(--text-dim);
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .speed-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+        .speed-btn.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: white;
         }
         .speed-value {
             font-size: 18px;
@@ -556,50 +555,30 @@
     <div class="controls-section">
         <h2>Lights</h2>
         <div class="controls-grid">
-            <div class="control-card" id="light1Card">
+            <div class="control-card light-card" id="light1Card" onclick="toggleLight(1)">
                 <div class="ctrl-icon">&#128161;</div>
                 <div class="ctrl-name">Light 1</div>
                 <div class="ctrl-status" id="light1Status">OFF</div>
-                <label class="toggle">
-                    <input type="checkbox" id="light1" onchange="toggleLight(1, this.checked)">
-                    <span class="slider"></span>
-                </label>
             </div>
-            <div class="control-card" id="light2Card">
+            <div class="control-card light-card" id="light2Card" onclick="toggleLight(2)">
                 <div class="ctrl-icon">&#128161;</div>
                 <div class="ctrl-name">Light 2</div>
                 <div class="ctrl-status" id="light2Status">OFF</div>
-                <label class="toggle">
-                    <input type="checkbox" id="light2" onchange="toggleLight(2, this.checked)">
-                    <span class="slider"></span>
-                </label>
             </div>
-            <div class="control-card" id="light3Card">
+            <div class="control-card light-card" id="light3Card" onclick="toggleLight(3)">
                 <div class="ctrl-icon">&#128161;</div>
                 <div class="ctrl-name">Light 3</div>
                 <div class="ctrl-status" id="light3Status">OFF</div>
-                <label class="toggle">
-                    <input type="checkbox" id="light3" onchange="toggleLight(3, this.checked)">
-                    <span class="slider"></span>
-                </label>
             </div>
-            <div class="control-card" id="light4Card">
+            <div class="control-card light-card" id="light4Card" onclick="toggleLight(4)">
                 <div class="ctrl-icon">&#128161;</div>
                 <div class="ctrl-name">Light 4</div>
                 <div class="ctrl-status" id="light4Status">OFF</div>
-                <label class="toggle">
-                    <input type="checkbox" id="light4" onchange="toggleLight(4, this.checked)">
-                    <span class="slider"></span>
-                </label>
             </div>
-            <div class="control-card" id="light5Card">
+            <div class="control-card light-card" id="light5Card" onclick="toggleLight(5)">
                 <div class="ctrl-icon">&#128161;</div>
                 <div class="ctrl-name">Light 5</div>
                 <div class="ctrl-status" id="light5Status">OFF</div>
-                <label class="toggle">
-                    <input type="checkbox" id="light5" onchange="toggleLight(5, this.checked)">
-                    <span class="slider"></span>
-                </label>
             </div>
         </div>
     </div>
@@ -616,10 +595,13 @@
                     <span class="slider"></span>
                 </label>
                 <div class="speed-control">
-                    <div class="speed-value" id="fan1SpeedVal">0%</div>
-                    <input type="range" class="speed-slider" id="fan1Speed" min="0" max="100" value="0"
-                           oninput="setFanSpeed(1, this.value)">
-                    <div class="speed-labels"><span>0</span><span>25</span><span>50</span><span>75</span><span>100</span></div>
+                    <div class="speed-value" id="fan1SpeedVal">Speed: 0</div>
+                    <div class="speed-btns">
+                        <button class="speed-btn" onclick="setFanSpeed(1, 1)">1</button>
+                        <button class="speed-btn" onclick="setFanSpeed(1, 2)">2</button>
+                        <button class="speed-btn" onclick="setFanSpeed(1, 3)">3</button>
+                        <button class="speed-btn" onclick="setFanSpeed(1, 4)">4</button>
+                    </div>
                 </div>
             </div>
             <div class="control-card fan-card" id="fan2Card">
@@ -631,10 +613,13 @@
                     <span class="slider"></span>
                 </label>
                 <div class="speed-control">
-                    <div class="speed-value" id="fan2SpeedVal">0%</div>
-                    <input type="range" class="speed-slider" id="fan2Speed" min="0" max="100" value="0"
-                           oninput="setFanSpeed(2, this.value)">
-                    <div class="speed-labels"><span>0</span><span>25</span><span>50</span><span>75</span><span>100</span></div>
+                    <div class="speed-value" id="fan2SpeedVal">Speed: 0</div>
+                    <div class="speed-btns">
+                        <button class="speed-btn" onclick="setFanSpeed(2, 1)">1</button>
+                        <button class="speed-btn" onclick="setFanSpeed(2, 2)">2</button>
+                        <button class="speed-btn" onclick="setFanSpeed(2, 3)">3</button>
+                        <button class="speed-btn" onclick="setFanSpeed(2, 4)">4</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -862,7 +847,11 @@
     }
 
     /* ---- Light & Fan Controls ---- */
-    function toggleLight(num, on) {
+    const lightState = {1:false, 2:false, 3:false, 4:false, 5:false};
+
+    function toggleLight(num) {
+        lightState[num] = !lightState[num];
+        const on = lightState[num];
         const cmd = 'LIGHT' + num + ':' + (on ? 'ON' : 'OFF');
         if (client) client.publish(TOPIC, cmd, { qos: 1 });
         const card = document.getElementById('light' + num + 'Card');
@@ -876,16 +865,18 @@
     }
 
     function toggleFan(num, on) {
-        const speed = on ? document.getElementById('fan' + num + 'Speed').value : 0;
-        const cmd = 'FAN' + num + ':' + (on ? speed : 'OFF');
+        const cmd = 'FAN' + num + ':' + (on ? '1' : 'OFF');
         if (client) client.publish(TOPIC, cmd, { qos: 1 });
         const card = document.getElementById('fan' + num + 'Card');
         const status = document.getElementById('fan' + num + 'Status');
         card.classList.toggle('active', on);
-        status.textContent = on ? 'ON - ' + speed + '%' : 'OFF';
-        if (!on) {
-            document.getElementById('fan' + num + 'Speed').value = 0;
-            document.getElementById('fan' + num + 'SpeedVal').textContent = '0%';
+        status.textContent = on ? 'ON - Speed 1' : 'OFF';
+        if (on) {
+            setFanBtnActive(num, 1);
+            document.getElementById('fan' + num + 'SpeedVal').textContent = 'Speed: 1';
+        } else {
+            setFanBtnActive(num, 0);
+            document.getElementById('fan' + num + 'SpeedVal').textContent = 'Speed: 0';
         }
         txCount++;
         document.getElementById('txCount').textContent = txCount;
@@ -893,25 +884,31 @@
         addLog('Sent: <span>' + cmd + '</span>');
     }
 
-    function setFanSpeed(num, val) {
-        document.getElementById('fan' + num + 'SpeedVal').textContent = val + '%';
+    function setFanSpeed(num, speed) {
+        speed = parseInt(speed);
         const checkbox = document.getElementById('fan' + num);
-        if (parseInt(val) > 0 && !checkbox.checked) {
-            checkbox.checked = true;
-            document.getElementById('fan' + num + 'Card').classList.add('active');
-        }
-        if (parseInt(val) === 0 && checkbox.checked) {
-            checkbox.checked = false;
-            document.getElementById('fan' + num + 'Card').classList.remove('active');
-        }
+        const card = document.getElementById('fan' + num + 'Card');
         const status = document.getElementById('fan' + num + 'Status');
-        status.textContent = parseInt(val) > 0 ? 'ON - ' + val + '%' : 'OFF';
-        const cmd = 'FAN' + num + ':' + val;
+
+        checkbox.checked = speed > 0;
+        card.classList.toggle('active', speed > 0);
+        status.textContent = speed > 0 ? 'ON - Speed ' + speed : 'OFF';
+        document.getElementById('fan' + num + 'SpeedVal').textContent = 'Speed: ' + speed;
+        setFanBtnActive(num, speed);
+
+        const cmd = 'FAN' + num + ':' + (speed > 0 ? speed : 'OFF');
         if (client) client.publish(TOPIC, cmd, { qos: 1 });
         txCount++;
         document.getElementById('txCount').textContent = txCount;
         addMessage(TOPIC, cmd, 'tx');
         addLog('Sent: <span>' + cmd + '</span>');
+    }
+
+    function setFanBtnActive(num, speed) {
+        const card = document.getElementById('fan' + num + 'Card');
+        card.querySelectorAll('.speed-btn').forEach((btn, i) => {
+            btn.classList.toggle('active', (i + 1) === speed);
+        });
     }
 
     function clearMessages() {
