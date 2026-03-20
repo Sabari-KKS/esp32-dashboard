@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ESP32 IoT Dashboard</title>
+    <link rel="manifest" href="manifest.json">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/5.10.3/mqtt.min.js"></script>
     <style>
         :root {
@@ -366,6 +367,120 @@
             background: var(--accent-glow);
         }
 
+        /* ---- Controls Section ---- */
+        .controls-section {
+            margin-bottom: 24px;
+        }
+        .controls-section h2 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--text-bright);
+        }
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px;
+        }
+        .control-card {
+            background: var(--card);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            transition: border-color 0.3s;
+        }
+        .control-card.active { border-color: var(--accent); }
+        .control-card .ctrl-icon {
+            font-size: 32px;
+            margin-bottom: 8px;
+            transition: filter 0.3s;
+        }
+        .control-card.active .ctrl-icon { filter: drop-shadow(0 0 8px var(--yellow)); }
+        .control-card .ctrl-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-bright);
+            margin-bottom: 4px;
+        }
+        .control-card .ctrl-status {
+            font-size: 12px;
+            color: var(--text-dim);
+            margin-bottom: 12px;
+        }
+        .control-card.active .ctrl-status { color: var(--green); }
+
+        /* Toggle Switch */
+        .toggle {
+            position: relative;
+            width: 50px;
+            height: 26px;
+            margin: 0 auto;
+            cursor: pointer;
+        }
+        .toggle input { display: none; }
+        .toggle .slider {
+            position: absolute;
+            inset: 0;
+            background: #334155;
+            border-radius: 26px;
+            transition: background 0.3s;
+        }
+        .toggle .slider::before {
+            content: '';
+            position: absolute;
+            width: 20px; height: 20px;
+            left: 3px; top: 3px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s;
+        }
+        .toggle input:checked + .slider { background: var(--accent); }
+        .toggle input:checked + .slider::before { transform: translateX(24px); }
+
+        /* Fan Card */
+        .fan-card .ctrl-icon { transition: filter 0.3s; }
+        .fan-card.active .fan-spin { animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .speed-control {
+            margin-top: 12px;
+        }
+        .speed-slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #334155;
+            outline: none;
+            margin: 8px 0;
+        }
+        .speed-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px; height: 18px;
+            border-radius: 50%;
+            background: var(--accent);
+            cursor: pointer;
+        }
+        .speed-slider::-moz-range-thumb {
+            width: 18px; height: 18px;
+            border-radius: 50%;
+            background: var(--accent);
+            cursor: pointer;
+            border: none;
+        }
+        .speed-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            color: var(--text-dim);
+        }
+        .speed-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--accent);
+            margin-top: 4px;
+        }
+
         /* ---- Footer ---- */
         .footer {
             text-align: center;
@@ -434,6 +549,94 @@
             <div class="label">Uptime</div>
             <div class="value" id="uptime">00:00</div>
             <div class="sub" id="startTime">--</div>
+        </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls-section">
+        <h2>Lights</h2>
+        <div class="controls-grid">
+            <div class="control-card" id="light1Card">
+                <div class="ctrl-icon">&#128161;</div>
+                <div class="ctrl-name">Light 1</div>
+                <div class="ctrl-status" id="light1Status">OFF</div>
+                <label class="toggle">
+                    <input type="checkbox" id="light1" onchange="toggleLight(1, this.checked)">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="control-card" id="light2Card">
+                <div class="ctrl-icon">&#128161;</div>
+                <div class="ctrl-name">Light 2</div>
+                <div class="ctrl-status" id="light2Status">OFF</div>
+                <label class="toggle">
+                    <input type="checkbox" id="light2" onchange="toggleLight(2, this.checked)">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="control-card" id="light3Card">
+                <div class="ctrl-icon">&#128161;</div>
+                <div class="ctrl-name">Light 3</div>
+                <div class="ctrl-status" id="light3Status">OFF</div>
+                <label class="toggle">
+                    <input type="checkbox" id="light3" onchange="toggleLight(3, this.checked)">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="control-card" id="light4Card">
+                <div class="ctrl-icon">&#128161;</div>
+                <div class="ctrl-name">Light 4</div>
+                <div class="ctrl-status" id="light4Status">OFF</div>
+                <label class="toggle">
+                    <input type="checkbox" id="light4" onchange="toggleLight(4, this.checked)">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="control-card" id="light5Card">
+                <div class="ctrl-icon">&#128161;</div>
+                <div class="ctrl-name">Light 5</div>
+                <div class="ctrl-status" id="light5Status">OFF</div>
+                <label class="toggle">
+                    <input type="checkbox" id="light5" onchange="toggleLight(5, this.checked)">
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <div class="controls-section">
+        <h2>Fans</h2>
+        <div class="controls-grid">
+            <div class="control-card fan-card" id="fan1Card">
+                <div class="ctrl-icon"><span class="fan-spin" id="fan1Spin">&#9752;</span></div>
+                <div class="ctrl-name">Fan 1</div>
+                <div class="ctrl-status" id="fan1Status">OFF</div>
+                <label class="toggle">
+                    <input type="checkbox" id="fan1" onchange="toggleFan(1, this.checked)">
+                    <span class="slider"></span>
+                </label>
+                <div class="speed-control">
+                    <div class="speed-value" id="fan1SpeedVal">0%</div>
+                    <input type="range" class="speed-slider" id="fan1Speed" min="0" max="100" value="0"
+                           oninput="setFanSpeed(1, this.value)">
+                    <div class="speed-labels"><span>0</span><span>25</span><span>50</span><span>75</span><span>100</span></div>
+                </div>
+            </div>
+            <div class="control-card fan-card" id="fan2Card">
+                <div class="ctrl-icon"><span class="fan-spin" id="fan2Spin">&#9752;</span></div>
+                <div class="ctrl-name">Fan 2</div>
+                <div class="ctrl-status" id="fan2Status">OFF</div>
+                <label class="toggle">
+                    <input type="checkbox" id="fan2" onchange="toggleFan(2, this.checked)">
+                    <span class="slider"></span>
+                </label>
+                <div class="speed-control">
+                    <div class="speed-value" id="fan2SpeedVal">0%</div>
+                    <input type="range" class="speed-slider" id="fan2Speed" min="0" max="100" value="0"
+                           oninput="setFanSpeed(2, this.value)">
+                    <div class="speed-labels"><span>0</span><span>25</span><span>50</span><span>75</span><span>100</span></div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -656,6 +859,59 @@
         document.getElementById('txCount').textContent = txCount;
         addMessage(TOPIC, msg, 'tx');
         addLog('Sent: <span>' + escapeHtml(msg) + '</span>');
+    }
+
+    /* ---- Light & Fan Controls ---- */
+    function toggleLight(num, on) {
+        const cmd = 'LIGHT' + num + ':' + (on ? 'ON' : 'OFF');
+        if (client) client.publish(TOPIC, cmd, { qos: 1 });
+        const card = document.getElementById('light' + num + 'Card');
+        const status = document.getElementById('light' + num + 'Status');
+        card.classList.toggle('active', on);
+        status.textContent = on ? 'ON' : 'OFF';
+        txCount++;
+        document.getElementById('txCount').textContent = txCount;
+        addMessage(TOPIC, cmd, 'tx');
+        addLog('Sent: <span>' + cmd + '</span>');
+    }
+
+    function toggleFan(num, on) {
+        const speed = on ? document.getElementById('fan' + num + 'Speed').value : 0;
+        const cmd = 'FAN' + num + ':' + (on ? speed : 'OFF');
+        if (client) client.publish(TOPIC, cmd, { qos: 1 });
+        const card = document.getElementById('fan' + num + 'Card');
+        const status = document.getElementById('fan' + num + 'Status');
+        card.classList.toggle('active', on);
+        status.textContent = on ? 'ON - ' + speed + '%' : 'OFF';
+        if (!on) {
+            document.getElementById('fan' + num + 'Speed').value = 0;
+            document.getElementById('fan' + num + 'SpeedVal').textContent = '0%';
+        }
+        txCount++;
+        document.getElementById('txCount').textContent = txCount;
+        addMessage(TOPIC, cmd, 'tx');
+        addLog('Sent: <span>' + cmd + '</span>');
+    }
+
+    function setFanSpeed(num, val) {
+        document.getElementById('fan' + num + 'SpeedVal').textContent = val + '%';
+        const checkbox = document.getElementById('fan' + num);
+        if (parseInt(val) > 0 && !checkbox.checked) {
+            checkbox.checked = true;
+            document.getElementById('fan' + num + 'Card').classList.add('active');
+        }
+        if (parseInt(val) === 0 && checkbox.checked) {
+            checkbox.checked = false;
+            document.getElementById('fan' + num + 'Card').classList.remove('active');
+        }
+        const status = document.getElementById('fan' + num + 'Status');
+        status.textContent = parseInt(val) > 0 ? 'ON - ' + val + '%' : 'OFF';
+        const cmd = 'FAN' + num + ':' + val;
+        if (client) client.publish(TOPIC, cmd, { qos: 1 });
+        txCount++;
+        document.getElementById('txCount').textContent = txCount;
+        addMessage(TOPIC, cmd, 'tx');
+        addLog('Sent: <span>' + cmd + '</span>');
     }
 
     function clearMessages() {
