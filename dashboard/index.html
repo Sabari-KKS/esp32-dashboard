@@ -1072,21 +1072,22 @@
 
     function toggleAllLights() {
         const anyOn = Object.values(lightState).some(v => v);
+        /* Send ALLON/ALLOFF to MSP via ESP */
+        if (client) client.publish(TOPIC, !anyOn ? 'ALLON' : 'ALLOFF', { qos: 1 });
+        txCount++;
         for (let i = 1; i <= 8; i++) {
             lightState[i] = !anyOn;
             const card = document.getElementById('light' + i + 'Card');
             const status = document.getElementById('light' + i + 'Status');
             card.classList.toggle('active', !anyOn);
             status.textContent = !anyOn ? 'ON' : 'OFF';
-            const cmd = 'LIGHT' + i + ':' + (!anyOn ? 'ON' : 'OFF');
-            if (client) client.publish(TOPIC, cmd, { qos: 1 });
-            txCount++;
         }
         document.getElementById('txCount').textContent = txCount;
         const allBtn = document.getElementById('allLightsBtn');
         allBtn.textContent = !anyOn ? 'All OFF' : 'All ON';
         allBtn.classList.toggle('on', !anyOn);
-        addLog('Sent: <span>ALL LIGHTS ' + (!anyOn ? 'ON' : 'OFF') + '</span>');
+        addMessage(TOPIC, !anyOn ? 'ALLON' : 'ALLOFF', 'tx');
+        addLog('Sent: <span>' + (!anyOn ? 'ALLON' : 'ALLOFF') + '</span>');
         broadcastState();
     }
 
@@ -1111,6 +1112,23 @@
 
     /* ---- Sync UI from incoming MQTT messages ---- */
     function syncFromMessage(msg) {
+        /* ALLON / ALLOFF */
+        if (msg === 'ALLON' || msg === 'ALLOFF') {
+            const on = msg === 'ALLON';
+            for (let i = 1; i <= 8; i++) {
+                lightState[i] = on;
+                const card = document.getElementById('light' + i + 'Card');
+                const status = document.getElementById('light' + i + 'Status');
+                if (card) {
+                    card.classList.toggle('active', on);
+                    status.textContent = on ? 'ON' : 'OFF';
+                }
+            }
+            const allBtn = document.getElementById('allLightsBtn');
+            allBtn.textContent = on ? 'All OFF' : 'All ON';
+            allBtn.classList.toggle('on', on);
+            return;
+        }
         /* LIGHT1:ON / LIGHT1:OFF */
         if (msg.startsWith('LIGHT')) {
             const match = msg.match(/^LIGHT(\d+):(ON|OFF)$/);
