@@ -866,7 +866,9 @@
     /* ---- MQTT ---- */
     const BROKER = 'wss://broker.emqx.io:8084/mqtt';
     const TOPIC = 'vautn/';
+    const SYNC_TOPIC = 'vautn/sync';
     let client = null;
+    const myClientId = 'dashboard_' + Math.random().toString(16).slice(2, 8);
     let rxCount = 0, txCount = 0;
     let startedAt = new Date();
 
@@ -885,7 +887,7 @@
         const connText = document.getElementById('connText');
 
         client = mqtt.connect(BROKER, {
-            clientId: 'dashboard_' + Math.random().toString(16).slice(2, 8),
+            clientId: myClientId,
             clean: true,
             connectTimeout: 5000,
             reconnectPeriod: 3000,
@@ -894,6 +896,9 @@
         client.on('connect', () => {
             setStatus('online', 'Connected');
             client.subscribe(TOPIC, { qos: 1 });
+            client.subscribe(SYNC_TOPIC, { qos: 1 });
+            /* Request current state from other dashboards */
+            client.publish(SYNC_TOPIC, JSON.stringify({from: myClientId, type: 'request'}), { qos: 1 });
             addLog('Connected to broker');
             addLog('Subscribed to <span>' + TOPIC + '</span>');
             startedAt = new Date();
@@ -910,6 +915,13 @@
 
         client.on('message', (topic, message) => {
             const msg = message.toString();
+
+            /* Handle sync topic separately */
+            if (topic === SYNC_TOPIC) {
+                handleSync(msg);
+                return;
+            }
+
             rxCount++;
             document.getElementById('rxCount').textContent = rxCount;
             addMessage(topic, msg, 'rx');
@@ -1006,6 +1018,7 @@
         document.getElementById('txCount').textContent = txCount;
         addMessage(TOPIC, cmd, 'tx');
         addLog('Sent: <span>' + cmd + '</span>');
+        broadcastState();
     }
 
     const fanState = {1: false, 2: false};
@@ -1024,6 +1037,7 @@
         document.getElementById('txCount').textContent = txCount;
         addMessage(TOPIC, cmd, 'tx');
         addLog('Sent: <span>' + cmd + '</span>');
+        broadcastState();
     }
 
     function setFanSpeed(num, speed) {
@@ -1038,6 +1052,7 @@
         document.getElementById('txCount').textContent = txCount;
         addMessage(TOPIC, cmd, 'tx');
         addLog('Sent: <span>' + cmd + '</span>');
+        broadcastState();
     }
 
     function updateFanUI(num) {
@@ -1072,6 +1087,7 @@
         allBtn.textContent = !anyOn ? 'All OFF' : 'All ON';
         allBtn.classList.toggle('on', !anyOn);
         addLog('Sent: <span>ALL LIGHTS ' + (!anyOn ? 'ON' : 'OFF') + '</span>');
+        broadcastState();
     }
 
     function toggleAllFans() {
@@ -1090,6 +1106,7 @@
         allBtn.textContent = !anyOn ? 'All OFF' : 'All ON';
         allBtn.classList.toggle('on', !anyOn);
         addLog('Sent: <span>ALL FANS ' + (!anyOn ? 'ON' : 'OFF') + '</span>');
+        broadcastState();
     }
 
     /* ---- Sync UI from incoming MQTT messages ---- */
@@ -1135,6 +1152,64 @@
                 allBtn.classList.toggle('on', anyOn);
             }
         }
+    }
+
+    /* ---- State Sync between dashboards ---- */
+    function broadcastState() {
+        if (!client) return;
+        const state = {
+            from: myClientId,
+            type: 'state',
+            lights: lightState,
+            fans: { state: fanState, speed: fanSpeed }
+        };
+        client.publish(SYNC_TOPIC, JSON.stringify(state), { qos: 1 });
+    }
+
+    function handleSync(msg) {
+        try {
+            const data = JSON.parse(msg);
+            if (data.from === myClientId) return; /* Ignore own messages */
+
+            if (data.type === 'request') {
+                /* Another dashboard wants current state — send ours */
+                broadcastState();
+                return;
+            }
+
+            if (data.type === 'state') {
+                /* Apply received state */
+                if (data.lights) {
+                    for (let i = 1; i <= 8; i++) {
+                        const on = data.lights[i];
+                        if (on === undefined) continue;
+                        lightState[i] = on;
+                        const card = document.getElementById('light' + i + 'Card');
+                        const status = document.getElementById('light' + i + 'Status');
+                        if (card) {
+                            card.classList.toggle('active', on);
+                            status.textContent = on ? 'ON' : 'OFF';
+                        }
+                    }
+                    const anyLightOn = Object.values(lightState).some(v => v);
+                    const allLightsBtn = document.getElementById('allLightsBtn');
+                    allLightsBtn.textContent = anyLightOn ? 'All OFF' : 'All ON';
+                    allLightsBtn.classList.toggle('on', anyLightOn);
+                }
+                if (data.fans) {
+                    for (let i = 1; i <= 2; i++) {
+                        if (data.fans.state[i] !== undefined) fanState[i] = data.fans.state[i];
+                        if (data.fans.speed[i] !== undefined) fanSpeed[i] = data.fans.speed[i];
+                        updateFanUI(i);
+                    }
+                    const anyFanOn = Object.values(fanState).some(v => v);
+                    const allFansBtn = document.getElementById('allFansBtn');
+                    allFansBtn.textContent = anyFanOn ? 'All OFF' : 'All ON';
+                    allFansBtn.classList.toggle('on', anyFanOn);
+                }
+                addLog('Synced state from another dashboard');
+            }
+        } catch (e) { /* ignore invalid JSON */ }
     }
 
     /* ---- More Toggle ---- */
